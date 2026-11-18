@@ -21,7 +21,7 @@ jobs:
   video:
     needs: lista
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 330
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +45,10 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-v1
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-qwen-base-v1
       - run: bash scripts/preparar.sh
       - run: bash scripts/trabajo.sh
         env:

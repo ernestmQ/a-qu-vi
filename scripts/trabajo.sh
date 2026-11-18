@@ -6,13 +6,20 @@ M=${M:-$HOME/m}; W=/tmp/w; mkdir -p $W
 dec() { openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in "$1"; }
 enc() { openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:K1 -out "$2" -in "$1"; }
 git fetch -q --depth 1 origin "$RAMA" base
-git show "origin/$RAMA:p.bin" > $W/p.bin; git show origin/base:r.bin > $W/r.bin
-dec $W/p.bin | tar -xz -C $W; dec $W/r.bin > $W/r.pt
+git show "origin/$RAMA:p.bin" > $W/p.bin; dec $W/p.bin | tar -xz -C $W
+VOZ=$(cat $W/voz.txt 2>/dev/null || echo padre)
 cp -r $W/src/. src/
 read -r N COMP MOD EXP < <(python3 -c "import json;e=json.load(open('$W/lista.json'))[$I];print(e['n'],e['comp'],e['mod'],e['exp'])")
 V=$W/v; mkdir -p $V
-python scripts/voz.py "$W/g/$N.json" $V >/dev/null
-python scripts/vc.py $W/r.pt $V/crudo.wav $V/manifest.json $V/conv.wav 8 >/dev/null
+if [ "$VOZ" = padre ]; then
+  git show origin/base:r.bin > $W/r.bin; dec $W/r.bin > $W/r.pt
+  python scripts/voz.py "$W/g/$N.json" $V >/dev/null
+  python scripts/vc.py $W/r.pt $V/crudo.wav $V/manifest.json $V/conv.wav 8 >/dev/null
+else
+  mkdir -p $W/rq; git show "origin/base:v-$VOZ.bin" > $W/rq.bin; dec $W/rq.bin | tar -xz -C $W/rq
+  python scripts/voz_qwen.py "$W/g/$N.json" $V $W/rq/ref.wav $W/rq/ref.txt
+  cp $V/crudo.wav $V/conv.wav
+fi
 ffmpeg -loglevel error -y -i $V/conv.wav -ar 48000 $V/voiceover.wav
 mkdir -p public/voz/x && cp $V/voiceover.wav public/voz/x/voiceover.wav
 cp $V/manifest.json src/pk/m.json
