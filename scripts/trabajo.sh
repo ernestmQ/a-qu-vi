@@ -11,7 +11,11 @@ VOZ=$(cat $W/voz.txt 2>/dev/null || echo padre)
 cp -r $W/src/. src/
 read -r N COMP MOD EXP < <(python3 -c "import json;e=json.load(open('$W/lista.json'))[$I];print(e['n'],e['comp'],e['mod'],e['exp'])")
 V=$W/v; mkdir -p $V
-if [ "$VOZ" = padre ]; then
+if [ -f "$W/vc/$N.flac" ]; then
+  # voz ya generada antes con el mismo texto: se reutiliza (solo cambian las escenas)
+  ffmpeg -loglevel error -y -i "$W/vc/$N.flac" -ar 48000 $V/voiceover.wav
+  cp "$W/vc/$N.json" $V/manifest.json; REUSO=1
+elif [ "$VOZ" = padre ]; then
   git show origin/base:r.bin > $W/r.bin; dec $W/r.bin > $W/r.pt
   python scripts/voz.py "$W/g/$N.json" $V >/dev/null
   python scripts/vc.py $W/r.pt $V/crudo.wav $V/manifest.json $V/conv.wav 8 >/dev/null
@@ -20,7 +24,7 @@ else
   python scripts/voz_qwen.py "$W/g/$N.json" $V $W/rq/ref.wav $W/rq/ref.txt
   cp $V/crudo.wav $V/conv.wav
 fi
-ffmpeg -loglevel error -y -i $V/conv.wav -ar 48000 $V/voiceover.wav
+[ -n "${REUSO:-}" ] || ffmpeg -loglevel error -y -i $V/conv.wav -ar 48000 $V/voiceover.wav
 mkdir -p public/voz/x && cp $V/voiceover.wav public/voz/x/voiceover.wav
 cp $V/manifest.json src/pk/m.json
 printf 'import React from "react";\nimport { %s } from "../%s";\nimport m from "./m.json";\nexport const COMPS: { id: string; component: React.FC<any>; manifest: unknown }[] = [{ id: "%s", component: %s, manifest: m }];\n' "$EXP" "$MOD" "$COMP" "$EXP" > src/pk/index.ts
