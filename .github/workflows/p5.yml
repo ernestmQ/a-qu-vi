@@ -1,0 +1,41 @@
+name: p5
+'on':
+  push:
+    branches:
+    - e-*
+permissions:
+  contents: write
+env:
+  K1: ${{ secrets.K1 }}
+  TAG: ${{ github.ref_name }}
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - run: bash scripts/instala_banco.sh eval > /tmp/inst.txt 2>&1 || (tail -c 4000
+        /tmp/inst.txt; exit 1)
+    - run: 'openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in p.bin
+        -out /tmp/cfg.json
+
+        for b in $(git ls-remote --heads origin "o-$(cat etiqueta.txt)-*" | sed ''s#.*refs/heads/##'');
+        do bash scripts/baja.sh "$b" /tmp/w || true; done
+
+        ls -la /tmp/w
+
+        python scripts/evalua.py /tmp/cfg.json /tmp/w /tmp/w/puntuaciones.json
+
+        mkdir -p /tmp/f
+
+        for f in /tmp/w/*.wav; do ffmpeg -loglevel error -y -i "$f" -af loudnorm=I=-16:TP=-1.5
+        -ar 44100 -b:a 160k "/tmp/f/$(basename "${f%.wav}").mp3"; done
+
+        cp /tmp/w/puntuaciones.json /tmp/w/registro_*.txt /tmp/f/ || true
+
+        '
+    - if: always()
+      run: bash scripts/sube.sh /tmp/f "o-$(cat etiqueta.txt)-final"
