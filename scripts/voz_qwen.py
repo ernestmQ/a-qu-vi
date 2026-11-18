@@ -34,6 +34,7 @@ datos = json.load(open(g)); t0 = time.time()
 pista, segs, t = [np.zeros(int(0.4 * SR), np.float32)], [], 0.4
 for s in datos["segments"]:
     texto = para_voz(s.get("sub") or s["text"]).replace("{", "").replace("}", "")
+    for a, b in ((r"\bMAD\b", "eme a de"), (r"\bcvxpy\b", "ce uve equis pai"), (r"\bHRP\b", "hache erre pe")): texto = re.sub(a, b, texto)
     trozos = []
     for f in [x for x in re.split(r"(?<=[.!?])\s+", texto) if x.strip()]:
         trozos += [frase(f), np.zeros(int(HUECO * SR), np.float32)]
