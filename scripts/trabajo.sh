@@ -25,6 +25,7 @@ else
   cp $V/crudo.wav $V/conv.wav
 fi
 [ -n "${REUSO:-}" ] || ffmpeg -loglevel error -y -i $V/conv.wav -ar 48000 $V/voiceover.wav
+if [ -z "${REUSO:-}" ]; then python scripts/qa_voz.py $V/voiceover.wav $V/manifest.json $V/qa.json || echo '{"error":"qa"}' > $V/qa.json; else echo '{"reutilizada":true}' > $V/qa.json; fi
 mkdir -p public/voz/x && cp $V/voiceover.wav public/voz/x/voiceover.wav
 cp $V/manifest.json src/pk/m.json
 printf 'import React from "react";\nimport { %s } from "../%s";\nimport m from "./m.json";\nexport const COMPS: { id: string; component: React.FC<any>; manifest: unknown }[] = [{ id: "%s", component: %s, manifest: m }];\n' "$EXP" "$MOD" "$COMP" "$EXP" > src/pk/index.ts
@@ -33,7 +34,7 @@ npx remotion render "$COMP" $V/bruto.mp4 --props=$V/props.json --log=error >/dev
 ffmpeg -loglevel error -y -i $V/bruto.mp4 -c:v copy -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 48000 -c:a aac -b:a 160k -movflags +faststart $V/final.mp4
 T0=$(python3 -c "import json;print(round(json.load(open('$V/manifest.json'))['segments'][0]['start']+0.7,2))")
 ffmpeg -loglevel error -y -ss $T0 -i $V/final.mp4 -frames:v 1 -vf scale=960:-1 -q:v 3 $V/poster.jpg
-tar -czf $V/r.tgz -C $V final.mp4 poster.jpg manifest.json
+tar -czf $V/r.tgz -C $V final.mp4 poster.jpg manifest.json qa.json
 enc $V/r.tgz $V/out-$I.bin
 O="o-${RAMA#c-}-$I"
 B=$(git hash-object -w $V/out-$I.bin); T=$(printf '100644 blob %s\tout.bin\n' "$B" | git mktree)

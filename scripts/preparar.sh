@@ -7,7 +7,7 @@ sudo apt-get install -y -qq sox libsox-fmt-all >/dev/null 2>&1 || true
 python -m pip install -q --upgrade pip
 python -m pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -q kokoro-onnx==0.6.1 soundfile numpy
-python -m pip install -q qwen-tts
+python -m pip install -q qwen-tts faster-whisper
 [ -f "$M/kokoro.onnx" ] || curl -sSL -o "$M/kokoro.onnx" https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
 [ -f "$M/voices.bin" ] || curl -sSL -o "$M/voices.bin" https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
 [ -f "$M/WavLM-Large.pt" ] || curl -sSL -o "$M/WavLM-Large.pt" https://github.com/bshall/knn-vc/releases/download/v0.1/WavLM-Large.pt
