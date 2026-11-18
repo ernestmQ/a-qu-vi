@@ -1,0 +1,20 @@
+name: l
+on:
+  push:
+    branches: ["x"]
+permissions:
+  contents: write
+  actions: write
+jobs:
+  limpia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for t in $(cat limpiar.txt); do
+            for b in $(git ls-remote --heads origin "c-$t" "o-$t-*" | sed 's#.*refs/heads/##'); do gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$b" >/dev/null; done
+            for id in $(gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=c-$t&per_page=50" --jq '.workflow_runs[].id'); do gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$id" >/dev/null || true; done
+          done
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/x" >/dev/null
