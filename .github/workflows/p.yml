@@ -1,0 +1,41 @@
+name: p
+on:
+  push:
+    branches: ["t-*"]
+permissions:
+  contents: write
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/huggingface
+          key: chatterbox-v1
+      - env:
+          K1: ${{ secrets.K1 }}
+          RAMA: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null)
+          python -m pip install -q --upgrade pip
+          python -m pip install -q chatterbox-tts >/dev/null
+          git fetch -q --depth 1 origin base
+          git show origin/base:r2.bin > /tmp/r2.bin
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in /tmp/r2.bin -out /tmp/ref.mp3
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in p.bin -out /tmp/frases.json
+          ffmpeg -loglevel error -y -ss ${INI:-3} -t 14 -i /tmp/ref.mp3 -ac 1 -ar 24000 /tmp/ref.wav
+          python scripts/prueba_voz.py /tmp/frases.json /tmp/ref.wav /tmp/o > /tmp/log.txt 2>&1 || (tail -c 3000 /tmp/log.txt; exit 1)
+          cd /tmp/o && for f in a b; do ffmpeg -loglevel error -y -i $f.wav -af loudnorm=I=-16:TP=-1.5 -b:a 160k $f.mp3; done
+          tar -czf /tmp/r.tgz -C /tmp/o a.mp3 b.mp3
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:K1 -in /tmp/r.tgz -out /tmp/out.bin
+          cd "$GITHUB_WORKSPACE"
+          B=$(git hash-object -w /tmp/out.bin); T=$(printf '100644 blob %s\tout.bin\n' "$B" | git mktree)
+          C=$(git -c user.name=r -c user.email=r@r commit-tree "$T" -m o); git push -q -f origin "$C:refs/heads/o-${RAMA#t-}-0"
