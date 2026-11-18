@@ -13,7 +13,8 @@ read -r N COMP MOD EXP < <(python3 -c "import json;e=json.load(open('$W/lista.js
 V=$W/v; mkdir -p $V
 if [ -f "$W/vc/$N.flac" ]; then
   # voz ya generada antes con el mismo texto: se reutiliza (solo cambian las escenas)
-  ffmpeg -loglevel error -y -i "$W/vc/$N.flac" -ar 48000 $V/voiceover.wav
+  F="$W/vc/$N.flac"; [ -f "$W/vc/$N.cruda.flac" ] && F="$W/vc/$N.cruda.flac"
+  ffmpeg -loglevel error -y -i "$F" -ar 48000 $V/voiceover.wav
   cp "$W/vc/$N.json" $V/manifest.json; REUSO=1
 elif [ "$VOZ" = padre ]; then
   git show origin/base:r.bin > $W/r.bin; dec $W/r.bin > $W/r.pt
@@ -21,6 +22,7 @@ elif [ "$VOZ" = padre ]; then
   python scripts/vc.py $W/r.pt $V/crudo.wav $V/manifest.json $V/conv.wav 8 >/dev/null
 else
   mkdir -p $W/rq; git show "origin/base:v-$VOZ.bin" > $W/rq.bin; dec $W/rq.bin | tar -xz -C $W/rq
+  if [ -f "$W/vp/$N.flac" ]; then export AQ_PREVIA="$W/vp/$N.flac" AQ_PREVIA_MAN="$W/vp/$N.json"; fi
   python scripts/voz_qwen.py "$W/g/$N.json" $V $W/rq/ref.wav $W/rq/ref.txt
   cp $V/crudo.wav $V/conv.wav
 fi
@@ -34,7 +36,9 @@ npx remotion render "$COMP" $V/bruto.mp4 --props=$V/props.json --log=error >/dev
 ffmpeg -loglevel error -y -i $V/bruto.mp4 -c:v copy -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 48000 -c:a aac -b:a 160k -movflags +faststart $V/final.mp4
 T0=$(python3 -c "import json;print(round(json.load(open('$V/manifest.json'))['segments'][0]['start']+0.7,2))")
 ffmpeg -loglevel error -y -ss $T0 -i $V/final.mp4 -frames:v 1 -vf scale=960:-1 -q:v 3 $V/poster.jpg
-tar -czf $V/r.tgz -C $V final.mp4 poster.jpg manifest.json qa.json
+# voz cruda (sin normalizar) para la caché por frase; si la voz se reutilizó sin cruda, no se guarda (estaría normalizada)
+if [ -f "$W/vc/$N.cruda.flac" ]; then cp "$W/vc/$N.cruda.flac" $V/voz.flac; elif [ -z "${REUSO:-}" ]; then ffmpeg -loglevel error -y -i $V/conv.wav -ar 24000 -ac 1 -c:a flac $V/voz.flac; fi
+tar -czf $V/r.tgz -C $V final.mp4 poster.jpg manifest.json qa.json $( [ -f $V/voz.flac ] && echo voz.flac )
 enc $V/r.tgz $V/out-$I.bin
 O="o-${RAMA#c-}-$I"
 B=$(git hash-object -w $V/out-$I.bin); T=$(printf '100644 blob %s\tout.bin\n' "$B" | git mktree)
