@@ -1,0 +1,64 @@
+name: p4
+on:
+  push:
+    branches: ["z-*"]
+permissions:
+  contents: write
+env:
+  K1: ${{ secrets.K1 }}
+  TAG: ${{ github.ref_name }}
+jobs:
+  diseno:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy: { fail-fast: false, matrix: { motor: [qwen_h, qwen_m] } }
+    steps: &pasos
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: instalar
+        run: bash scripts/instala_banco.sh ${{ matrix.motor }} > /tmp/inst.txt 2>&1 || (tail -c 4000 /tmp/inst.txt; exit 1)
+      - name: generar
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in p.bin -out /tmp/cfg.json
+          mkdir -p /tmp/o /tmp/ref
+          if [ "${{ matrix.motor }}" = qwen_clon ] || [ "${{ matrix.motor }}" = chatterbox ]; then
+            for s in qwen_h qwen_m; do bash scripts/baja.sh "o-${TAG#z-}-$s" /tmp/ref || true; done
+          fi
+          timeout 280m python scripts/banco.py ${{ matrix.motor }} /tmp/cfg.json /tmp/o /tmp/ref || echo "fallo $?"
+          tail -c 3000 /tmp/o/registro_*.txt || true
+      - name: subir
+        if: always()
+        run: bash scripts/sube.sh /tmp/o "o-${TAG#z-}-${{ matrix.motor }}"
+  resto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy: { fail-fast: false, matrix: { motor: [voxcpm_h, voxcpm_m, magpie, pocket, supertonic, kokoro] } }
+    steps: *pasos
+  clon:
+    needs: diseno
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy: { fail-fast: false, matrix: { motor: [qwen_clon, chatterbox] } }
+    steps: *pasos
+  eval:
+    needs: [diseno, resto, clon]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: bash scripts/instala_banco.sh eval > /tmp/inst.txt 2>&1 || (tail -c 4000 /tmp/inst.txt; exit 1)
+      - run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in p.bin -out /tmp/cfg.json
+          for b in $(git ls-remote --heads origin "o-${TAG#z-}-*" | sed 's#.*refs/heads/##'); do bash scripts/baja.sh "$b" /tmp/w || true; done
+          ls -la /tmp/w
+          python scripts/evalua.py /tmp/cfg.json /tmp/w /tmp/w/puntuaciones.json
+          mkdir -p /tmp/f
+          for f in /tmp/w/*.wav; do ffmpeg -loglevel error -y -i "$f" -af loudnorm=I=-16:TP=-1.5 -ar 44100 -b:a 160k "/tmp/f/$(basename "${f%.wav}").mp3"; done
+          cp /tmp/w/puntuaciones.json /tmp/w/registro_*.txt /tmp/f/ || true
+      - if: always()
+        run: bash scripts/sube.sh /tmp/f "o-${TAG#z-}-final"
