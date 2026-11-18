@@ -1,11 +1,7 @@
 name: v
 on:
-  repository_dispatch:
-    types: [v]
-  workflow_dispatch:
-    inputs:
-      tag:
-        required: true
+  push:
+    branches: ["c-*"]
 permissions:
   contents: write
 jobs:
@@ -13,29 +9,27 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       idx: ${{ steps.l.outputs.idx }}
-      tag: ${{ steps.l.outputs.tag }}
     steps:
+      - uses: actions/checkout@v4
       - id: l
         env:
-          GH_TOKEN: ${{ github.token }}
           K1: ${{ secrets.K1 }}
-          TAG: ${{ github.event.client_payload.tag || inputs.tag }}
         run: |
           mkdir -p /tmp/p
-          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p p.bin -D /tmp/p
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in /tmp/p/p.bin | tar -xz -C /tmp/p lista.json
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in p.bin | tar -xz -C /tmp/p lista.json
           echo "idx=$(python3 -c "import json;print(json.dumps(list(range(len(json.load(open('/tmp/p/lista.json')))))))")" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
   video:
     needs: lista
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix:
         i: ${{ fromJson(needs.lista.outputs.idx) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -54,7 +48,6 @@ jobs:
       - run: bash scripts/preparar.sh
       - run: bash scripts/trabajo.sh
         env:
-          GH_TOKEN: ${{ github.token }}
           K1: ${{ secrets.K1 }}
-          TAG: ${{ needs.lista.outputs.tag }}
+          RAMA: ${{ github.ref_name }}
           I: ${{ matrix.i }}
