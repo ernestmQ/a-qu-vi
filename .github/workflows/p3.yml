@@ -1,0 +1,40 @@
+name: p3
+on:
+  push:
+    branches: ["w-*"]
+permissions:
+  contents: write
+jobs:
+  prueba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - env:
+          K1: ${{ secrets.K1 }}
+          RAMA: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          python -m pip install -q --upgrade pip
+          python -m pip install -q chatterbox-tts soundfile >/dev/null
+          M=$HOME/m; mkdir -p $M
+          curl -sSL -o $M/WavLM-Large.pt https://github.com/bshall/knn-vc/releases/download/v0.1/WavLM-Large.pt
+          curl -sSL -o $M/prematch_g_02500000.pt https://github.com/bshall/knn-vc/releases/download/v0.1/prematch_g_02500000.pt
+          git clone -q --depth 1 https://github.com/bshall/knn-vc.git $M/knn-vc
+          git fetch -q --depth 1 origin base
+          for f in r r2; do git show origin/base:$f.bin > /tmp/$f.bin; done
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in /tmp/r.bin -out /tmp/r.pt
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in /tmp/r2.bin -out /tmp/ref.mp3
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in p.bin | tar -xz -C /tmp
+          ffmpeg -loglevel error -y -ss 3 -t 14 -i /tmp/ref.mp3 -ac 1 -ar 24000 /tmp/ref.wav
+          python scripts/prueba_voz3.py /tmp/frases.json /tmp/ref.wav /tmp/ref_neutra.wav /tmp/o > /tmp/log.txt 2>&1 || (tail -c 3000 /tmp/log.txt; exit 1)
+          cd /tmp/o && for f in padre_cfg0 padre_cfg02 neutra_padre; do ffmpeg -loglevel error -y -i $f.wav -af loudnorm=I=-16:TP=-1.5 -b:a 160k $f.mp3; done
+          tar -czf /tmp/r.tgz -C /tmp/o padre_cfg0.mp3 padre_cfg02.mp3 neutra_padre.mp3
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:K1 -in /tmp/r.tgz -out /tmp/out.bin
+          cd "$GITHUB_WORKSPACE"
+          B=$(git hash-object -w /tmp/out.bin); T=$(printf '100644 blob %s\tout.bin\n' "$B" | git mktree)
+          C=$(git -c user.name=r -c user.email=r@r commit-tree "$T" -m o); git push -q -f origin "$C:refs/heads/o-${RAMA#w-}-0"
