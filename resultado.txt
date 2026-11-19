@@ -1,0 +1,54 @@
+token: 53 caracteres en el secreto, 53 tras limpiar; espacios en el secreto: 0
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+
+ ⛅️ wrangler 4.165.0
+────────────────────
+Total Upload: 2.49 KiB / gzip: 1.07 KiB
+Worker Startup Time: 3 ms
+Your Worker has access to the following bindings:
+Binding                                 Resource       
+env.VIDEOS (academia-quant-videos)      R2 Bucket      
+
+Uploaded aq-video (2.00 sec)
+Deployed aq-video triggers (0.32 sec)
+  https://aq-video.academia-quant.workers.dev
+Current Version ID: ***
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+URL https://aq-video.academia-quant.workers.dev
+SUBIDO l14-v1.mp4 9277243
+SUBIDO l14-v2.mp4 9940365
+SUBIDO l14-v3.mp4 9245478
+SUBIDO l14-v4.mp4 8860211
+SUBIDO l21-v1.mp4 8101013
+SUBIDO l21-v2.mp4 8609445
+SUBIDO l21-v3.mp4 7903220
+SUBIDO l21-v4.mp4 8000906
+SUBIDO l22-v1.mp4 8028119
+SUBIDO l22-v2.mp4 7871061
+SUBIDO l22-v3.mp4 8057711
+SUBIDO l22-v4.mp4 8424795
+SUBIDO l23-v1.mp4 7716176
+SUBIDO l23-v2.mp4 7622319
+SUBIDO l23-v3.mp4 7995420
+SUBIDO l23-v4.mp4 7571832
+SUBIDO l24-v1.mp4 7462270
+SUBIDO l24-v2.mp4 7229467
+SUBIDO l24-v3.mp4 7524793
+SUBIDO l24-v4.mp4 8189923
+SUBIDO l25-v1.mp4 8053859
+SUBIDO l25-v2.mp4 7401775
+SUBIDO l25-v3.mp4 7579422
+SUBIDO l25-v4.mp4 7660089
+SUBIDO l31-v1.mp4 7349238
+SUBIDO l31-v2.mp4 8133447
+SUBIDO l31-v3.mp4 7664472
+SUBIDO l31-v4.mp4 7720990
+SUBIDO t1-1-2-v1.mp4 8354700
+SUBIDO t1-1-2-v2.mp4 8399487
+SUBIDO t1-1-2-v3.mp4 7859249
+ERROR t1-1-2-v4.mp4:   🪵  Logs were written to "/home/runner/.config/.wrangler/logs/***.log" 
+PRUEBA web: 206 1000
+PRUEBA directa: 403
+PRUEBA otra web: 403
+FIN
