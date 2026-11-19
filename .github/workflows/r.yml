@@ -1,0 +1,55 @@
+name: r
+# Sube vídeos al almacén R2 de Cloudflare y publica el servidor de vídeo (cdn/). Rama r-<etiqueta> con r.bin.* (cifrado).
+on:
+  push:
+    branches: ["r-*"]
+permissions:
+  contents: write
+jobs:
+  subir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      K1: ${{ secrets.K1 }}
+      RAMA: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: |
+          set -uo pipefail
+          TAG="${RAMA#r-}"; LOG=/tmp/resultado.txt; : > $LOG
+          fin() { cd "$GITHUB_WORKSPACE"; B=$(git hash-object -w $LOG); T=$(printf '100644 blob %s\tresultado.txt\n' "$B" | git mktree)
+                  C=$(git -c user.name=ernestmQ -c user.email=ernestmQ@users.noreply.github.com commit-tree "$T" -m s); git push -q -f origin "$C:refs/heads/s-$TAG"
+                  gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$RAMA" >/dev/null || true; }
+          trap fin EXIT
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "FALTAN LOS SECRETOS CF_API_TOKEN / CF_ACCOUNT_ID" | tee -a $LOG; exit 1; fi
+          cd cdn
+          npx -y wrangler@4 deploy > /tmp/deploy.txt 2>&1; E=$?
+          grep -v -i "token" /tmp/deploy.txt | tail -n 25 >> $LOG
+          [ $E -eq 0 ] || { echo "DEPLOY FALLÓ" >> $LOG; exit 1; }
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/deploy.txt | head -1); echo "URL $URL" >> $LOG
+          cd "$GITHUB_WORKSPACE"
+          if ls r.bin.* >/dev/null 2>&1; then
+            cat r.bin.* > /tmp/r.bin
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in /tmp/r.bin -out /tmp/r.tgz
+            mkdir -p /tmp/v && tar -xzf /tmp/r.tgz -C /tmp/v
+            cd cdn
+            for f in /tmp/v/*; do
+              n=$(basename "$f"); case "$n" in *.mp4) ct=video/mp4;; *.vtt) ct=text/vtt;; *.jpg) ct=image/jpeg;; *) continue;; esac
+              if npx -y wrangler@4 r2 object put "academia-quant-videos/$n" --file "$f" --content-type "$ct" --remote > /tmp/put.txt 2>&1; then
+                echo "SUBIDO $n $(stat -c %s "$f")" >> $LOG
+              else echo "ERROR $n: $(tail -n 3 /tmp/put.txt | tr '\n' ' ')" >> $LOG; fi
+            done
+            P=$(ls /tmp/v | grep '\.mp4$' | head -1)
+            if [ -n "$P" ] && [ -n "$URL" ]; then
+              echo "PRUEBA web: $(curl -s -o /dev/null -w '%{http_code} %{size_download}' -H 'Referer: https://academiaquant.netlify.app/' -H 'Range: bytes=0-999' "$URL/v/$P")" >> $LOG
+              echo "PRUEBA directa: $(curl -s -o /dev/null -w '%{http_code}' "$URL/v/$P")" >> $LOG
+              echo "PRUEBA otra web: $(curl -s -o /dev/null -w '%{http_code}' -H 'Referer: https://otra.example/' "$URL/v/$P")" >> $LOG
+            fi
+          fi
+          echo FIN >> $LOG
