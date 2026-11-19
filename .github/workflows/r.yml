@@ -29,8 +29,10 @@ jobs:
           trap fin EXIT
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "FALTAN LOS SECRETOS CF_API_TOKEN / CF_ACCOUNT_ID" | tee -a $LOG; exit 1; fi
           cd cdn
+          limpia() { sed -e "s|${CLOUDFLARE_API_TOKEN}|***|g" -E -e 's/[A-Za-z0-9_-]{32,}/***/g'; }   # nunca un token en la rama pública
           npx -y wrangler@4 deploy > /tmp/deploy.txt 2>&1; E=$?
-          grep -v -i "token" /tmp/deploy.txt | tail -n 40 >> $LOG
+          cat /tmp/deploy.txt   # el registro de Actions oculta los secretos
+          limpia < /tmp/deploy.txt | grep -v -i "token" | tail -n 40 >> $LOG
           [ $E -eq 0 ] || { echo "DEPLOY FALLÓ" >> $LOG; exit 1; }
           URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/deploy.txt | head -1); echo "URL $URL" >> $LOG
           cd "$GITHUB_WORKSPACE"
@@ -43,7 +45,7 @@ jobs:
               n=$(basename "$f"); case "$n" in *.mp4) ct=video/mp4;; *.vtt) ct=text/vtt;; *.jpg) ct=image/jpeg;; *) continue;; esac
               if npx -y wrangler@4 r2 object put "academia-quant-videos/$n" --file "$f" --content-type "$ct" --remote > /tmp/put.txt 2>&1; then
                 echo "SUBIDO $n $(stat -c %s "$f")" >> $LOG
-              else echo "ERROR $n: $(tail -n 3 /tmp/put.txt | tr '\n' ' ')" >> $LOG; fi
+              else cat /tmp/put.txt; echo "ERROR $n: $(tail -n 3 /tmp/put.txt | limpia | tr '\n' ' ')" >> $LOG; fi
             done
             P=$(ls /tmp/v | grep '\.mp4$' | head -1)
             if [ -n "$P" ] && [ -n "$URL" ]; then
