@@ -39,13 +39,14 @@ if os.environ.get("AQ_PREVIA") and os.path.exists(os.environ["AQ_PREVIA"]):
         import torchaudio.functional as AF
         pa = AF.resample(torch.from_numpy(pa), psr, SR).numpy()
     for s in json.load(open(os.environ["AQ_PREVIA_MAN"]))["segments"]:
-        PREVIA[s.get("sub") or s["text"]] = pa[int(s["start"] * SR): int(s["end"] * SR)]
+        # clave: el texto HABLADO si el manifiesto lo guarda (así un cambio de pronunciación regenera la frase); si no, el escrito
+        PREVIA[("voz", s["voz"]) if "voz" in s else ("txt", s.get("sub") or s["text"])] = pa[int(s["start"] * SR): int(s["end"] * SR)]
 datos = json.load(open(g)); t0 = time.time(); reusadas = 0
 pista, segs, t = [np.zeros(int(0.4 * SR), np.float32)], [], 0.4
 for s in datos["segments"]:
     texto = para_voz(s.get("sub") or s["text"]).replace("{", "").replace("}", "")
     for a, b in ((r"\bMAD\b", "eme a de"), (r"\bcvxpy\b", "ce uve equis pai"), (r"\bHRP\b", "hache erre pe")): texto = re.sub(a, b, texto)
-    clave = s.get("sub") or s["text"]
+    clave = ("voz", texto) if ("voz", texto) in PREVIA else ("txt", s.get("sub") or s["text"])
     if clave in PREVIA and len(PREVIA[clave]) > SR // 2:
         a = PREVIA[clave]; reusadas += 1
     else:
@@ -54,7 +55,7 @@ for s in datos["segments"]:
             trozos += [frase(f), np.zeros(int(HUECO * SR), np.float32)]
         a = np.concatenate(trozos[:-1])
     du = len(a) / SR
-    segs.append({**s, "start": round(t, 3), "duration": round(du, 3), "end": round(t + du, 3)})
+    segs.append({**s, "voz": texto, "start": round(t, 3), "duration": round(du, 3), "end": round(t + du, 3)})
     pista += [a, np.zeros(int(PAUSA * SR), np.float32)]; t += du + PAUSA
     print(f"{s['id']} {du:.1f}s ({time.time() - t0:.0f}s)", flush=True)
 print(f"reutilizados {reusadas} de {len(datos['segments'])} segmentos", flush=True)

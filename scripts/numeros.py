@@ -60,6 +60,7 @@ def para_voz(t):
     t = re.sub(r"(\d)\s?/\s?(√?\d)", r"\1 entre \2", t)
     t = re.sub(r"√\s?(\d[\d.,]*)", lambda m: "raíz de " + decimal(m.group(1)), t)
     t = t.replace("ρ", "ro").replace("σ", "sigma").replace("×", " por ").replace("≈", " aproximadamente ")
+    t = re.sub(r"\bR²", "erre cuadrado", t); t = t.replace("²", " al cuadrado").replace("±", "más menos ")
     t = re.sub(r"\s=\s", " igual a ", t); t = t.replace(" · ", ", ")
     t = re.sub(r"1\.ª", "primera", t); t = re.sub(r"2\.ª", "segunda", t); t = re.sub(r"3\.ª", "tercera", t)
     num = r"[-−]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[-−]?\d+(?:,\d+)?"
