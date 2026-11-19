@@ -27,10 +27,16 @@ jobs:
                   C=$(git -c user.name=ernestmQ -c user.email=ernestmQ@users.noreply.github.com commit-tree "$T" -m s); git push -q -f origin "$C:refs/heads/s-$TAG"
                   gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$RAMA" >/dev/null || true; }
           trap fin EXIT
+          # el secreto puede llevar espacios, saltos de línea o «Bearer …» si se copió de más: se limpia
+          T0="$CLOUDFLARE_API_TOKEN"; T1=$(printf '%s' "$T0" | grep -oE 'Bearer[[:space:]]+[A-Za-z0-9_-]+' | awk '{print $2}' | head -1)
+          [ -n "$T1" ] || T1=$(printf '%s' "$T0" | tr -d '[:space:]')
+          export CLOUDFLARE_API_TOKEN="$T1"; echo "::add-mask::$T1"
+          export CLOUDFLARE_ACCOUNT_ID=$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')
+          echo "token: ${#T0} caracteres en el secreto, ${#T1} tras limpiar; espacios en el secreto: $(printf '%s' "$T0" | tr -cd ' \n\t' | wc -c)" | tee -a $LOG
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "FALTAN LOS SECRETOS CF_API_TOKEN / CF_ACCOUNT_ID" | tee -a $LOG; exit 1; fi
           cd cdn
           limpia() { sed -e "s|${CLOUDFLARE_API_TOKEN}|***|g" -E -e 's/[A-Za-z0-9_-]{32,}/***/g'; }   # nunca un token en la rama pública
-          npx -y wrangler@4 deploy > /tmp/deploy.txt 2>&1; E=$?
+          npx -y wrangler@latest deploy > /tmp/deploy.txt 2>&1; E=$?
           cat /tmp/deploy.txt   # el registro de Actions oculta los secretos
           limpia < /tmp/deploy.txt | grep -v -i "token" | tail -n 40 >> $LOG
           [ $E -eq 0 ] || { echo "DEPLOY FALLÓ" >> $LOG; exit 1; }
@@ -43,7 +49,7 @@ jobs:
             cd cdn
             for f in /tmp/v/*; do
               n=$(basename "$f"); case "$n" in *.mp4) ct=video/mp4;; *.vtt) ct=text/vtt;; *.jpg) ct=image/jpeg;; *) continue;; esac
-              if npx -y wrangler@4 r2 object put "academia-quant-videos/$n" --file "$f" --content-type "$ct" --remote > /tmp/put.txt 2>&1; then
+              if npx -y wrangler@latest r2 object put "academia-quant-videos/$n" --file "$f" --content-type "$ct" --remote > /tmp/put.txt 2>&1; then
                 echo "SUBIDO $n $(stat -c %s "$f")" >> $LOG
               else cat /tmp/put.txt; echo "ERROR $n: $(tail -n 3 /tmp/put.txt | limpia | tr '\n' ' ')" >> $LOG; fi
             done
