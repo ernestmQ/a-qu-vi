@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: "20"
       - run: |
-          set -uo pipefail
+          set +e -uo pipefail
           TAG="${RAMA#r-}"; LOG=/tmp/resultado.txt; : > $LOG
           fin() { cd "$GITHUB_WORKSPACE"; B=$(git hash-object -w $LOG); T=$(printf '100644 blob %s\tresultado.txt\n' "$B" | git mktree)
                   C=$(git -c user.name=ernestmQ -c user.email=ernestmQ@users.noreply.github.com commit-tree "$T" -m s); git push -q -f origin "$C:refs/heads/s-$TAG"
@@ -30,7 +30,7 @@ jobs:
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "FALTAN LOS SECRETOS CF_API_TOKEN / CF_ACCOUNT_ID" | tee -a $LOG; exit 1; fi
           cd cdn
           npx -y wrangler@4 deploy > /tmp/deploy.txt 2>&1; E=$?
-          grep -v -i "token" /tmp/deploy.txt | tail -n 25 >> $LOG
+          grep -v -i "token" /tmp/deploy.txt | tail -n 40 >> $LOG
           [ $E -eq 0 ] || { echo "DEPLOY FALLÓ" >> $LOG; exit 1; }
           URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' /tmp/deploy.txt | head -1); echo "URL $URL" >> $LOG
           cd "$GITHUB_WORKSPACE"
