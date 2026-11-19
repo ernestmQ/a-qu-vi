@@ -45,7 +45,7 @@ jobs:
           if ls r.bin.* >/dev/null 2>&1; then
             cat r.bin.* > /tmp/r.bin
             openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:K1 -in /tmp/r.bin -out /tmp/r.tgz
-            mkdir -p /tmp/v && tar -xzf /tmp/r.tgz -C /tmp/v
+            mkdir -p /tmp/v && tar -xf /tmp/r.tgz -C /tmp/v
             cd cdn
             for f in /tmp/v/*; do
               n=$(basename "$f"); case "$n" in *.mp4) ct=video/mp4;; *.vtt) ct=text/vtt;; *.jpg) ct=image/jpeg;; *) continue;; esac
