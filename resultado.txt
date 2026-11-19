@@ -1,0 +1,54 @@
+token: 53 caracteres en el secreto, 53 tras limpiar; espacios en el secreto: 0
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+
+ ⛅️ wrangler 4.165.0
+────────────────────
+Total Upload: 2.49 KiB / gzip: 1.07 KiB
+Worker Startup Time: 2 ms
+Your Worker has access to the following bindings:
+Binding                                 Resource       
+env.VIDEOS (academia-quant-videos)      R2 Bucket      
+
+Uploaded aq-video (3.20 sec)
+Deployed aq-video triggers (0.72 sec)
+  https://aq-video.academia-quant.workers.dev
+Current Version ID: ***
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+URL https://aq-video.academia-quant.workers.dev
+SUBIDO k1-1-1-v1.mp4 7678557
+SUBIDO k1-1-1-v2.mp4 8103524
+SUBIDO k1-1-1-v3.mp4 7355979
+SUBIDO k1-1-1-v4.mp4 7912307
+SUBIDO k1-1-2-v1.mp4 7709861
+SUBIDO k1-1-2-v2.mp4 8049799
+SUBIDO k1-1-2-v3.mp4 7539669
+SUBIDO k1-1-2-v4.mp4 8080620
+SUBIDO k1-1-3-v1.mp4 7989345
+SUBIDO k1-1-3-v2.mp4 7513487
+SUBIDO k1-1-3-v3.mp4 7631916
+SUBIDO k1-1-3-v4.mp4 8132010
+SUBIDO k1-1-4-v1.mp4 7539767
+SUBIDO k1-1-4-v2.mp4 7393145
+SUBIDO k1-1-4-v3.mp4 7390836
+SUBIDO k1-1-4-v4.mp4 7833070
+SUBIDO k1-2-2-v1.mp4 7823525
+SUBIDO k1-2-2-v2.mp4 8207329
+SUBIDO k1-2-2-v3.mp4 8426834
+SUBIDO k1-2-2-v4.mp4 8429145
+SUBIDO k1-2-3-v1.mp4 7804246
+SUBIDO k1-2-3-v2.mp4 7901220
+SUBIDO k1-2-3-v3.mp4 8496625
+SUBIDO k1-2-3-v4.mp4 8167824
+SUBIDO t2-2-2-v1.mp4 8396828
+SUBIDO t2-2-2-v2.mp4 7618107
+SUBIDO t2-2-2-v3.mp4 8774129
+SUBIDO t2-2-2-v4.mp4 7709146
+SUBIDO t2-3-3-v1.mp4 7643689
+SUBIDO t2-3-3-v2.mp4 7447886
+SUBIDO t2-3-3-v3.mp4 7648484
+SUBIDO t2-3-3-v4.mp4 8132675
+PRUEBA web: 206 1000
+PRUEBA directa: 403
+PRUEBA otra web: 403
+FIN
