@@ -1,0 +1,26 @@
+token: 53 caracteres en el secreto, 53 tras limpiar; espacios en el secreto: 0
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+
+ ⛅️ wrangler 4.165.0
+────────────────────
+Total Upload: 2.49 KiB / gzip: 1.07 KiB
+Worker Startup Time: 1 ms
+Your Worker has access to the following bindings:
+Binding                                 Resource       
+env.VIDEOS (academia-quant-videos)      R2 Bucket      
+
+Uploaded aq-video (4.32 sec)
+Deployed aq-video triggers (0.58 sec)
+  https://aq-video.academia-quant.workers.dev
+Current Version ID: ***
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+URL https://aq-video.academia-quant.workers.dev
+SUBIDO t1-4-3-n1.mp4 12503910
+SUBIDO t1-4-3-n2.mp4 13920815
+SUBIDO t1-4-3-n3.mp4 12713113
+SUBIDO t1-4-3-n4.mp4 15700463
+PRUEBA web: 206 1000
+PRUEBA directa: 403
+PRUEBA otra web: 403
+FIN
